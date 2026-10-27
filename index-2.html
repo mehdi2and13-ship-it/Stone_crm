@@ -1,0 +1,82 @@
+<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#8a5a2b"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><title>دفترچه مشتریان سنگ</title>
+<style>
+:root{--bg:#f6f4f0;--card:#fff;--tx:#1d1b18;--mu:#7a746b;--ac:#8a5a2b;--bd:#e4ded4;--hi:#1f9d55;--mid:#d9942b;--lo:#c0453a;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171513;--card:#222019;--tx:#f1ede6;--mu:#a39b8e;--ac:#d9a066;--bd:#38342b;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#171513;--card:#222019;--tx:#f1ede6;--mu:#a39b8e;--ac:#d9a066;--bd:#38342b;color-scheme:dark}
+*{box-sizing:border-box}html,body{margin:0}body{background:var(--bg);color:var(--tx);font-family:Tahoma,"Vazirmatn",sans-serif;font-size:15px;padding-bottom:70px}
+.top{position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);padding:10px 12px;z-index:5;border-bottom:1px solid var(--bd)}
+h1{font-size:17px;margin:0 0 8px}
+input,select,textarea,button{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:9px;max-width:100%}
+textarea{width:100%;min-height:90px}input[type=text],input[type=tel],input[type=date],select{width:100%}
+.row{display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap}.row>*{flex:1;min-width:110px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:11px;margin:8px 12px}
+.pill{display:inline-block;font-size:12px;padding:2px 8px;border-radius:99px;color:#fff;margin-inline-start:4px}
+.mu{color:var(--mu);font-size:13px}.b{background:var(--ac);color:#fff;border:0;font-weight:bold}
+.tabs{position:fixed;bottom:0;inset-inline:0;display:flex;background:var(--card);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabs button{flex:1;border:0;border-radius:0;background:none;padding:14px 4px}.tabs .on{color:var(--ac);font-weight:bold}
+.sheet{position:fixed;inset:0;background:var(--bg);overflow:auto;z-index:10;padding:calc(12px + env(safe-area-inset-top,0px)) 12px 40px}
+.chips button{padding:6px 10px;font-size:13px}.sel{outline:2px solid var(--ac)}
+a.btn{display:block;text-align:center;text-decoration:none;color:#fff;background:var(--hi);padding:10px;border-radius:10px;flex:1;min-width:90px}
+.due{color:var(--lo);font-weight:bold}
+</style></head><body>
+<div id="app"></div>
+<div class="tabs"><button id="t0" onclick="tab(0)">مخاطبین</button><button id="t1" onclick="tab(1)">پیگیری</button><button id="t2" onclick="tab(2)">افزودن</button></div>
+<div id="sheet" class="sheet" hidden></div>
+<script>
+var P=["آذربایجان شرقی","آذربایجان غربی","اردبیل","اصفهان","البرز","ایلام","بوشهر","تهران","چهارمحال و بختیاری","خراسان جنوبی","خراسان رضوی","خراسان شمالی","خوزستان","زنجان","سمنان","سیستان و بلوچستان","فارس","قزوین","قم","کردستان","کرمان","کرمانشاه","کهگیلویه و بویراحمد","گلستان","گیلان","لرستان","مازندران","مرکزی","هرمزگان","همدان","یزد"];
+var J=["سازنده","انباردار","سنگکار","معمار"];
+var POT={high:["پتانسیل بالا","#1f9d55"],mid:["متوسط","#d9942b"],low:["پایین","#c0453a"],none:["نامشخص","#7a746b"]};
+var C=[],TPL="سلام وقت بخیر، من مهدی از Capital Stone هستم. عکس و قیمت سنگ‌ها را برایتان می‌فرستم.",cur=0,F={q:"",p:"",j:"",t:""},lastDef={p:"تهران",j:"سازنده"};
+try{C=JSON.parse(localStorage.getItem("stonecrm_c")||localStorage.getItem("c")||"[]");TPL=localStorage.getItem("stonecrm_tpl")||localStorage.getItem("tpl")||TPL}catch(e){}
+function save(){try{localStorage.setItem("stonecrm_c",JSON.stringify(C));localStorage.setItem("stonecrm_tpl",TPL)}catch(e){}}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function norm(s){s=String(s).replace(/[۰-۹]/g,function(d){return"۰۱۲۳۴۵۶۷۸۹".indexOf(d)}).replace(/[٠-٩]/g,function(d){return"٠١٢٣٤٥٦٧٨٩".indexOf(d)}).replace(/\D/g,"");if(s.indexOf("98")==0&&s.length>=12)s="0"+s.slice(2);if(s.length==10&&s[0]!="0")s="0"+s;return s}
+function today(){return new Date().toLocaleDateString("sv")}
+function addDays(n){var d=new Date();d.setDate(d.getDate()+n);return d.toLocaleDateString("sv")}
+function fd(i){return i?new Date(i+"T00:00").toLocaleDateString("fa-IR",{dateStyle:"medium"}):""}
+function opts(a,v,all){return(all?'<option value="">'+all+'</option>':"")+a.map(function(x){return'<option'+(x==v?" selected":"")+'>'+x+'</option>'}).join("")}
+function tab(n){cur=n;for(var i=0;i<3;i++)document.getElementById("t"+i).className=i==n?"on":"";render()}
+function pill(t){var p=POT[t||"none"];return'<span class="pill" style="background:'+p[1]+'">'+p[0]+'</span>'}
+function item(c){var due=c.fu&&c.fu<=today();return'<div class="card" onclick="openC('+c.id+')"><b>'+esc(c.name||c.phone)+'</b>'+pill(c.pot)+'<div class="mu" dir="ltr" style="text-align:right">'+esc(c.phone)+'</div><div class="mu">'+esc(c.prov)+" · "+esc(c.job)+'</div>'+(c.fu?'<div class="mu'+(due?" due":"")+'">پیگیری: '+fd(c.fu)+'</div>':"")+'</div>'}
+function render(){var h="";
+if(cur==0){var L=C.filter(function(c){var q=F.q.trim();return(!F.p||c.prov==F.p)&&(!F.j||c.job==F.j)&&(!F.t||(c.pot||"none")==F.t)&&(!q||((c.name||"")+c.phone+(c.note||"")).indexOf(q)>-1)});
+h='<div class="top"><h1>مخاطبین ('+L.length+' از '+C.length+')</h1><input type="text" placeholder="جستجوی نام یا شماره" value="'+esc(F.q)+'" oninput="F.q=this.value;list()"><div class="row" style="margin-top:6px"><select onchange="F.p=this.value;list()">'+opts(P,F.p,"همه استان‌ها")+'</select><select onchange="F.j=this.value;list()">'+opts(J,F.j,"همه شغل‌ها")+'</select><select onchange="F.t=this.value;list()"><option value="">همه پتانسیل‌ها</option>'+Object.keys(POT).map(function(k){return'<option value="'+k+'"'+(F.t==k?" selected":"")+'>'+POT[k][0]+'</option>'}).join("")+'</select></div></div><div id="list"></div>';}
+else if(cur==1){var L=C.filter(function(c){return c.fu}).sort(function(a,b){return a.fu<b.fu?-1:1});
+h='<div class="top"><h1>یادآوری پیگیری</h1></div>'+(L.length?L.map(item).join(""):'<p class="mu" style="margin:20px">هنوز پیگیری‌ای تنظیم نشده. داخل کارت هر مشتری تاریخ پیگیری بگذارید.</p>');}
+else{h='<div class="top"><h1>افزودن شماره</h1></div><div class="card"><b>یک شماره</b><div class="row" style="margin-top:6px"><input type="text" id="an" placeholder="نام (اختیاری)"><input type="tel" id="ap" placeholder="شماره موبایل"></div><div class="row"><select id="apr">'+opts(P,lastDef.p)+'</select><select id="aj">'+opts(J,lastDef.j)+'</select></div><button class="b" style="width:100%" onclick="addOne()">افزودن</button></div>'+
+'<div class="card"><b>افزودن گروهی</b><div class="mu">هر خط یک شماره، یا «نام، شماره». استان و شغل همان بالاست.</div><textarea id="bulk" dir="ltr"></textarea><button class="b" style="width:100%" onclick="addBulk()">ثبت لیست</button></div>'+
+'<div class="card"><b>متن پیام پیش‌فرض</b><textarea id="tpl">'+esc(TPL)+'</textarea><button onclick="TPL=document.getElementById(\'tpl\').value;save()">ذخیره متن</button></div>'+
+'<div class="card"><b>پشتیبان‌گیری</b><div class="mu">اطلاعات روی همین مرورگر ذخیره می‌شود. گاهی پشتیبان بگیرید.</div><textarea id="bk" dir="ltr"></textarea><div class="row"><button onclick="document.getElementById(\'bk\').value=JSON.stringify(C)">نمایش پشتیبان</button><button onclick="restore()">بازیابی از متن</button></div></div>';}
+document.getElementById("app").innerHTML=h;if(cur==0)list()}
+function list(){var L=C.filter(function(c){var q=F.q.trim();return(!F.p||c.prov==F.p)&&(!F.j||c.job==F.j)&&(!F.t||(c.pot||"none")==F.t)&&(!q||((c.name||"")+c.phone+(c.note||"")).indexOf(q)>-1)});document.getElementById("list").innerHTML=L.length?L.map(item).join(""):'<p class="mu" style="margin:20px">موردی نیست. از تب «افزودن» شماره اضافه کنید.</p>';}
+function addOne(){var p=norm(document.getElementById("ap").value);if(p.length<10)return alert("شماره معتبر نیست");addC(document.getElementById("an").value,p,document.getElementById("apr").value,document.getElementById("aj").value);document.getElementById("ap").value="";document.getElementById("an").value="";save()}
+function addC(n,p,pr,j){lastDef={p:pr,j:j};if(C.some(function(c){return c.phone==p}))return false;C.unshift({id:Date.now()+Math.floor(Math.random()*1000),name:n.trim(),phone:p,prov:pr,job:j,pot:"none",note:"",fu:"",log:[]});return true}
+function addBulk(){var pr=document.getElementById("apr").value,j=document.getElementById("aj").value,n=0;document.getElementById("bulk").value.split("\n").forEach(function(l){var m=l.split(/[,،\t]/),p=norm(m[m.length-1]);if(p.length>=10&&addC(m.length>1?m[0]:"",p,pr,j))n++});save();alert(n+" شماره اضافه شد");document.getElementById("bulk").value=""}
+function restore(){try{var d=JSON.parse(document.getElementById("bk").value);if(Array.isArray(d)&&confirm("اطلاعات فعلی جایگزین شود؟")){C=d;save();render()}}catch(e){alert("متن پشتیبان معتبر نیست")}}
+function g(id){return C.filter(function(c){return c.id==id})[0]}
+function openC(id){var c=g(id),s=document.getElementById("sheet"),wa="https://wa.me/98"+c.phone.slice(1)+"?text="+encodeURIComponent(TPL),tg="https://t.me/+98"+c.phone.slice(1);
+s.hidden=false;s.innerHTML='<button onclick="closeC()">بازگشت ←</button><h2 style="margin:10px 0 2px">'+esc(c.name||c.phone)+'</h2><div class="mu">'+esc(c.prov)+" · "+esc(c.job)+" · "+esc(c.phone)+'</div>'+
+'<div class="row" style="margin-top:10px"><a class="btn" href="tel:'+c.phone+'">تماس</a><a class="btn" target="_blank" rel="noopener" href="'+wa+'">واتساپ</a><a class="btn" target="_blank" rel="noopener" href="'+tg+'">تلگرام</a></div>'+
+'<div class="mu" style="margin:10px 0 4px">نتیجه تماس / سطح پتانسیل</div><div class="row chips">'+Object.keys(POT).map(function(k){return'<button class="'+((c.pot||"none")==k?"sel":"")+'" onclick="setP('+id+',\''+k+'\')">'+POT[k][0]+'</button>'}).join("")+'</div>'+
+'<div class="mu" style="margin:10px 0 4px">یادداشت تماس</div><textarea onchange="g('+id+').note=this.value;save()">'+esc(c.note)+'</textarea>'+
+'<div class="mu" style="margin:10px 0 4px">پیگیری بعدی: '+(c.fu?fd(c.fu):"تنظیم نشده")+'</div><div class="row chips"><button onclick="setF('+id+',addDays(3))">۳ روز</button><button onclick="setF('+id+',addDays(7))">۱ هفته</button><button onclick="setF('+id+',addDays(14))">۲ هفته</button><button onclick="setF('+id+',addDays(30))">۱ ماه</button><button onclick="setF('+id+',\'\')">حذف</button></div><input type="date" value="'+esc(c.fu)+'" onchange="setF('+id+',this.value)">'+
+'<div class="card" style="margin:12px 0"><b>ارسال محصول</b><input type="text" id="sn" placeholder="نام محصول (مثلاً تراورتن کرم آریا)" style="margin:6px 0"><div class="row"><input type="text" id="sc" inputmode="numeric" placeholder="قیمت نقد"><input type="text" id="sk" inputmode="numeric" placeholder="قیمت چک"><input type="text" id="sm" inputmode="numeric" placeholder="مدت چک (ماه)"></div><input type="file" id="sf" accept="image/*" multiple style="width:100%;margin-bottom:6px"><button class="b" style="width:100%" onclick="shareP('+id+')">ارسال با پیام‌رسان</button></div>'+
+'<div class="mu" style="margin:12px 0 4px">محصولات ارسال‌شده</div><div class="row"><input type="text" id="lg" placeholder="مثلاً تراورتن کرم آریا، ۲.۵۰۰.۰۰۰"><button class="b" style="flex:0 0 auto" onclick="addL('+id+')">ثبت</button></div>'+
+(c.log||[]).map(function(x){return'<div class="card" style="margin:6px 0">'+esc(x.t)+'<div class="mu">'+fd(x.d)+'</div></div>'}).join("")+
+'<div class="row" style="margin-top:14px"><button onclick="copyT()">کپی متن پیام (روبیکا/بله)</button><button style="color:var(--lo)" onclick="del('+id+')">حذف مخاطب</button></div>'}
+function dg(s){return String(s).replace(/[۰-۹]/g,function(d){return"۰۱۲۳۴۵۶۷۸۹".indexOf(d)}).replace(/\D/g,"")}
+function fm(s){return dg(s).replace(/\B(?=(\d{3})+(?!\d))/g,",")}
+async function shareP(id){var c=g(id),n=document.getElementById("sn").value.trim();if(!n)return alert("نام محصول را بنویسید");
+var cash=fm(document.getElementById("sc").value),chk=fm(document.getElementById("sk").value),mo=dg(document.getElementById("sm").value);
+var t=n+(cash?"\nقیمت نقد: "+cash+" تومان":"")+(chk?"\nقیمت چک: "+chk+" تومان"+(mo?" ("+mo+" ماهه)":""):"")+"\nCapital Stone";
+var fs=Array.prototype.slice.call(document.getElementById("sf").files||[]),d={text:t,files:fs};
+try{if(fs.length&&navigator.canShare&&!navigator.canShare({files:fs}))d={text:t};await navigator.share(d);c.log.unshift({t:n+(cash?" | نقد "+cash:"")+(chk?" | چک "+chk:""),d:today()});save();openC(id)}catch(e){if(e&&e.name=="AbortError")return;try{navigator.clipboard.writeText(t)}catch(x){}alert("اشتراک‌گذاری در این محیط باز نشد. متن کپی شد؛ با دکمه‌های واتساپ یا تلگرام بالا چت را باز کن، بچسبان و بعد در «محصولات ارسال‌شده» ثبتش کن.")}}
+function closeC(){document.getElementById("sheet").hidden=true;render()}
+function setP(id,k){g(id).pot=k;save();openC(id)}
+function setF(id,d){g(id).fu=d;save();openC(id)}
+function addL(id){var v=document.getElementById("lg").value.trim();if(!v)return;g(id).log.unshift({t:v,d:today()});save();openC(id)}
+function del(id){if(confirm("این مخاطب حذف شود؟")){C=C.filter(function(c){return c.id!=id});save();closeC()}}
+function copyT(){try{navigator.clipboard.writeText(TPL)}catch(e){}}
+tab(0);
+if("serviceWorker" in navigator){try{navigator.serviceWorker.register("sw.js")}catch(e){}}
+</script></body></html>
